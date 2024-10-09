@@ -79,35 +79,22 @@ output "igw" {
 }
 
 
-#============ NAT GATEWAY + EIP =============
+#============ EIP + NAT GATEWAY =============
 
-# To allocate the NAT GW to the first public subnet by default
-resource "aws_nat_gateway" "this" {
-  allocation_id = element(aws_eip.this[*].id, 0)
-  subnet_id     = element(aws_subnet.public[*].id, 0)
-
-  tags = {
-    group     = var.stack_name
-    form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-nat-gw-${var.rnd_id}"
-  }
-}
-output "nat-gw" {
-  description = "stw NAT gateway"
-  value       = aws_nat_gateway.this.id
-}
-
-# Tp allocate a EIP as associated with a 'vpc' to each EC2 instance of the application(s) being deployed
+# To create and allocate a EIP as associated with a 'vpc' to 
+# each EC2 instance of the application(s) being deployed
 resource "aws_eip" "this" {
-  count = var.settings.web_app.count
+  count = var.subnets_count.public
 
-  instance = aws_instance.ec2[count.index].id
-  domain   = "vpc"
+  # To uncomment if there is only there are multiple EC2 instances 
+  # with multiple public subnets
+  #instance = aws_instance.ec2[count.index].id
+  domain = "vpc"
 
   tags = {
     group     = var.stack_name
     form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-eip-${var.rnd_id}"
+    Name      = "${var.stack_name}-${var.env}-eip-${count.index + 1}-${var.rnd_id}"
   }
 }
 output "eip" {
@@ -115,35 +102,55 @@ output "eip" {
   value       = aws_eip.this[*].id
 }
 
+# To allocate a public NAT GW to each private subnet
+resource "aws_nat_gateway" "this_public" {
+  count = var.subnets_count.public
+
+  allocation_id = aws_eip.this[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = {
+    group     = var.stack_name
+    form_type = "Terraform Resources"
+    Name      = "${var.stack_name}-${var.env}-nat-gw-${count.index + 1}-${var.rnd_id}"
+  }
+}
+output "nat-gw" {
+  description = "stw NAT gateway"
+  value       = aws_nat_gateway.this_public[*].id
+}
+
 
 #============ ROUTE TABLES =============
 
 # Private subnets route tables and associations
 resource "aws_route_table" "private_subnet" {
+  count = var.subnets_count.private
+
   vpc_id = aws_vpc.this.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.this.id
+    gateway_id = aws_nat_gateway.this_public[count.index].id
   }
 
   tags = {
     group     = var.stack_name
     form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-private-rt-${var.rnd_id}"
+    Name      = "${var.stack_name}-${var.env}-private-rt-${count.index + 1}-${var.rnd_id}"
   }
 }
 resource "aws_route_table_association" "private_subnet" {
-  count = length(aws_subnet.private)
+  count = var.subnets_count.private
 
   subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private_subnet.id
-}
-output "private-route-table" {
-  description = "stw private subnet route table"
-  value       = "Private subnet rt = ${aws_route_table.private_subnet.id}"
+  route_table_id = aws_route_table.private_subnet[count.index].id
 }
 
+output "private-route-table" {
+  description = "stw private subnet route table"
+  value       = aws_route_table.private_subnet[*].id
+}
 
 # Public subnets route tables and associations
 resource "aws_route_table" "public_subnet" {
@@ -161,14 +168,14 @@ resource "aws_route_table" "public_subnet" {
   }
 }
 resource "aws_route_table_association" "public_subnet" {
-  count = length(aws_subnet.public)
+  count = var.subnets_count.public
 
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public_subnet.id
 }
 output "public-route-table" {
   description = "stw public subnet route table"
-  value       = "Public subnet rt = ${aws_route_table.public_subnet.id}"
+  value       = aws_route_table.public_subnet[*].id
 }
 
 
@@ -178,10 +185,8 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.this.id
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids = [
-    aws_route_table.private_subnet.id,
-    aws_route_table.public_subnet.id
-  ]
+  route_table_ids = concat([aws_route_table.public_subnet.id],
+  aws_route_table.private_subnet[*].id)
 
   tags = {
     group     = var.stack_name
@@ -192,79 +197,6 @@ resource "aws_vpc_endpoint" "s3" {
 output "vpce-s3" {
   description = "stw vpc endpoint s3"
   value       = aws_vpc_endpoint.s3.id
-}
-
-
-#============ SECURITY GROUP =============
-
-# EC2 Security Group
-resource "aws_security_group" "web_app_server" {
-  name   = "${var.stack_name}-${var.env}-web-app-server-${var.rnd_id}"
-  vpc_id = aws_vpc.this.id
-
-  # SSH - inbound rule that allows SSH traffic only from your IP addr
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    #cidr_blocks = ["${var.my_ip}/32"]
-  }
-  # HTTP
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # HTTPS
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-
-  tags = {
-    group     = var.stack_name
-    form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-web-app-server-${var.rnd_id}"
-  }
-}
-output "web-app-server-sg" {
-  description = "stw ec2 web app server security group"
-  value       = aws_security_group.web_app_server.id
-}
-
-# RDS Security Group
-resource "aws_security_group" "db_server" {
-  name   = "${var.stack_name}-${var.env}-db-server-${var.rnd_id}"
-  vpc_id = aws_vpc.this.id
-
-  ingress {
-    from_port       = "3306"
-    to_port         = "3306"
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web_app_server.id]
-  }
-
-  tags = {
-    group     = var.stack_name
-    form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-db-server-${var.rnd_id}"
-  }
-}
-output "db-server-sg" {
-  description = "stw db server security group"
-  value       = aws_security_group.db_server.id
 }
 
 

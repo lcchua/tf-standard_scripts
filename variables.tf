@@ -1,14 +1,10 @@
+# FIRST STEP - TO CHANGE THE APPROPRIATE TF CONFIGURATION PARAMETERS BELOW
+
 variable "stack_name" {
   type    = string
   default = "lcchua-stw"
 }
 
-# These variables are used for the EC2 key pair creation if not using any existing ones
-variable "working_dir" {
-  description = "Pathname of my local working directory"
-  type        = string
-  default     = "/Users/laich/NTU_CE7"
-}
 variable "key_name" {
   description = "Name of EC2 Key Pair"
   type        = string

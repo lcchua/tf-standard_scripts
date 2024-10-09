@@ -33,12 +33,7 @@ resource "aws_instance" "ec2" {
   ami           = data.aws_ami.this.id
   instance_type = var.settings.web_app.instance_type
   #instance_type = var.instance_type  // uncomment if the "settings" var is not used instead
-
-  # To use an existing EC2 key-pair stored in the working dir
-  #key_name  = var.key_name
-  # To create an EC2 key-pair using Terraform, and also 
-  # download it to your local machine.
-  key_name = aws_key_pair.this.key_name // uncomment as needed
+  key_name = var.key_name
 
   # Uncomment the appropriate subnet_id value assignment as accordingly
   #subnet_id                   = element(aws_subnet.public[*].id, 0)
@@ -66,12 +61,11 @@ output "ec2" {
 }
 output "user-data" {
   description = "stw EC2 user data"
-  value       = "${path.module}/ws_install.sh"
+  value       = "${path.module}/as_install.sh"
 }
 output "ec2_web_public_dns" {
-  description = "The public dbs address of the ec2 web app"
-  value       = aws_eip.this[0].public_dns
-
+  description = "The public DNS address of the ec2 web app"
+  value       = aws_eip.this[*].public_dns
   # Wait for the EIPs to be created and dsitributed
   depends_on = [aws_eip.this]
 }
