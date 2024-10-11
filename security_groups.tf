@@ -50,7 +50,7 @@ resource "aws_security_group" "web_app_server" {
   }
 }
 output "web-app-server-sg" {
-  description = "stw ec2 web app server security group"
+  description = "stw web app server security group"
   value       = aws_security_group.web_app_server.id
 }
 

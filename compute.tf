@@ -27,8 +27,8 @@ output "ami" {
 }
 
 #============ EC2 INSTANCE CREATION WITH AUTO-INSTALLATION =============
-resource "aws_instance" "ec2" {
-  count = var.settings.web_app.count // adjust the number of EC2 instances to create
+resource "aws_instance" "ec2_public" {
+  count = var.settings.web_app.count // adjust the number of public EC2 instances to create
 
   ami           = data.aws_ami.this.id
   instance_type = var.settings.web_app.instance_type
@@ -42,7 +42,7 @@ resource "aws_instance" "ec2" {
   vpc_security_group_ids      = [aws_security_group.web_app_server.id]
 
   # To update the previously created EC2 with a user data script passed in.
-  # This is to convert your EC2 into a HTTPD web server.
+  # This is to convert your EC2 into a web app server running httpd.
   user_data_replace_on_change = true // to trigger a destroy and recreate
   user_data                   = file("${path.module}/as_install.sh")
 
@@ -52,19 +52,19 @@ resource "aws_instance" "ec2" {
   tags = {
     group     = var.stack_name
     form_type = "Terraform Resources"
-    Name      = "${var.stack_name}-${var.env}-ec2-server-${var.rnd_id}"
+    Name      = "${var.stack_name}-${var.env}-ec2-web-app-server-${var.rnd_id}"
   }
 }
-output "ec2" {
-  description = "stw EC2 instance"
-  value       = aws_instance.ec2[*].id
+output "ec2_public" {
+  description = "stw EC2 instance - web app server"
+  value       = aws_instance.ec2_public[*].id
 }
-output "user-data" {
-  description = "stw EC2 user data"
+output "ec2_public_user-data" {
+  description = "stw web app server EC2 user data"
   value       = "${path.module}/as_install.sh"
 }
 output "ec2_web_public_dns" {
-  description = "The public DNS address of the ec2 web app"
+  description = "The public DNS address of the EC2 web app server"
   value       = aws_eip.this[*].public_dns
   # Wait for the EIPs to be created and dsitributed
   depends_on = [aws_eip.this]

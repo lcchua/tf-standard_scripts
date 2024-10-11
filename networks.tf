@@ -88,7 +88,7 @@ resource "aws_eip" "this" {
 
   # To uncomment if there is only there are multiple EC2 instances 
   # with multiple public subnets
-  #instance = aws_instance.ec2[count.index].id
+  #instance = aws_instance.ec2_public[count.index].id
   domain = "vpc"
 
   tags = {

@@ -8,7 +8,7 @@ variable "stack_name" {
 variable "key_name" {
   description = "Name of EC2 Key Pair"
   type        = string
-  default     = "lcchua-useast1-30072024"
+  default     = "lcchua-temp-user-08082024"
 }
 
 variable "region" {
