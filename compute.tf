@@ -44,7 +44,7 @@ resource "aws_instance" "ec2_public" {
   # To update the previously created EC2 with a user data script passed in.
   # This is to convert your EC2 into a web app server running httpd.
   user_data_replace_on_change = true // to trigger a destroy and recreate
-  user_data                   = file("${path.module}/as_install.sh")
+  user_data                   = file("${path.module}/ws_install.sh")
 
   # Enable detailed monitoring
   monitoring = true

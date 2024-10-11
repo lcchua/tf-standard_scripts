@@ -21,8 +21,8 @@ variable "subnets_count" {
   description = "Number of public & private subnets"
   type        = map(number)
   default = {
-    public  = 3,
-    private = 3
+    public  = 2,
+    private = 2
   }
 }
 
@@ -56,8 +56,12 @@ variable "rnd_id" {
   type        = string
 }
 
-# Uncomment this block as needed if the "settings" variable is not being used instead.
-/*
+
+# Uncomment this '/*** .... ***/' block as needed if the "settings" variable 
+# is not being used instead.
+
+/***
+
 # This varaible to hold your IP address for setting up the 
 # EC2 security group SSH rule which is stored in a secrets
 # file (eg. secrets.tfvars).
@@ -67,6 +71,7 @@ variable "my_ip" {
   type        = string
   sensitive   = true
 }
+
 # This variable to hold the database master username which
 # will be stored in a secrets file (eg. secrets.tfvars).
 #     - for example as <db_username = "admin"> in this file
@@ -75,6 +80,7 @@ variable "db_username" {
   type        = string
   sensitive   = true
 }
+
 # This variable to hold the database master password which 
 # will be stored in a secrets file (eg. secrets.tfvars).
 #     - for example as <db_password = "password"> in this file
@@ -83,13 +89,11 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
-*/
 
-# Uncomment as needed if the "settings" variable is not being used instead.
-/*
 variable "instance_type" {
   description = "Type of EC2 instance"
   type        = string
   default     = "t2.micro"
 }
-*/
+
+***/

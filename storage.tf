@@ -1,11 +1,13 @@
 #============ S3 BUCKET =============
 
-# Bucket with versioning enabled and acl set to public read
-resource "random_id" "s3_id" {
+# Generate a random identifier
+resource "random_id" "suffix_s3" {
   byte_length = 2
 }
+
+# Bucket with versioning enabled and acl set to public read
 resource "aws_s3_bucket" "lcchua-tf-s3bucket" {
-  bucket = "lcchua-bucket-${random_id.s3_id.dec}"
+  bucket = "lcchua-bucket-${random_id.suffix_s3.dec}"
 
   tags = {
     group = var.stack_name

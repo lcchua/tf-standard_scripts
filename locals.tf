@@ -14,3 +14,10 @@ locals {
   #availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
   availability_zones = data.aws_availability_zones.available.names[*]
 }
+
+# To get the current date
+locals {
+  current_timestamp = timestamp()
+  formatted_date    = formatdate("DDMMYYYY", local.current_timestamp)
+}
+

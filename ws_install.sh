@@ -16,3 +16,8 @@ find /var/www -type d -exec chmod 2775 {} \;
 find /var/www -type f -exec chmod 0664 {} \;
 echo "<h1>Hello World! $(hostname -f)</h1>" > /var/www/html/index.html
 reboot
+
+# After reboot, SSH into the EC2 server and run the following commands to check:
+#   i) httpd -v
+#   ii) sudo systemctl status httpd
+# After which, go to browser and run http://<ec2_publc_ip>
